@@ -42,7 +42,7 @@ options(scipen=999) # not scientific notation
 \noindent Construction of a new garbage incinerator in North Andover in the early 1980s was controversial due to the increases in ambient pollution that it would create. Rumors of the incinerator began after 1978. Construction started in 1981, and the incinerator began operating in 1985. In Economics, land market theory suggests that local amenities are capitalized in housing values, and predicts that the prices of houses located near the incinerator would fall compared to the price of houses located further away from the incinerator. By 1981, you can assume that all market participants had full information on the upcoming garbage incinerator, so that housing values had capitalized the upcoming arrival of the incinerator.
 
 # Read Data
-```{r message=FALSE, warning=FALSE, include=FALSE}
+```{r echo=TRUE}
 data <- read_csv(here("data", "KM_EDS241.csv")) %>% 
   mutate(nearinc = as.factor(nearinc)) %>% 
   mutate(year = as.factor(year)) %>%
@@ -95,7 +95,6 @@ data_summary_table2 <- data_summary2 %>%
   kable_paper(full_width = FALSE) %>% 
   row_spec(c(0), background = "lightgray")
 data_summary_table2
-# on average (not considering incinerator proximity) house prices increased by $16,035 from 1978 to 1981.
 ```
 
 ```{r}
@@ -116,7 +115,6 @@ data_summary_table3 <- data_summary3 %>%
   kable_paper(full_width = FALSE) %>% 
   row_spec(c(0), background = "lightgray")
 data_summary_table3
-# on average (not considering incinerator proximity) house prices increased by $16,035 from 1978 to 1981.
 ```
 
 # Question a:
@@ -151,7 +149,7 @@ model_a_se <- round(model_a[[2]][2], 2)
 model_a_se
 ```
 ### Answer A:
-\noindent Based on a simple OLS regression of real house values on the indicator for being located near the incinerator in 1981, the house value "penalty" for houses located near the incinerator was $`r model_a_coef`. The estimated coefficient does correspond to the negative 'causal effect' of the incinerator on housing values because the coefficient is negative and, based on the p-value, this coefficient is statistically different from 0. On average houses located near the incinerator had lower values than houses not near the incinerator. This analysis has omitted variable bias and excludes fact that, on average, homes near the incinerator are older and smaller than homes not near the incinerator. 
+\noindent Based on a simple OLS regression of real house values on the indicator for being located near the incinerator in 1981, the house value "penalty" for houses located near the incinerator was $`r model_a_coef`. The estimated coefficient does correspond to the negative 'causal effect' of the incinerator on housing values because the coefficient is negative and, based on the p-value, this coefficient is statistically different from 0. On average houses located near the incinerator had lower values than houses not near the incinerator. This analysis has omitted variable bias and excludes the fact that, on average, homes near the incinerator are older and smaller than homes not near the incinerator. 
 
 # Question b:
 ### Using the data for 1978, provide some evidence that the location choice of the incinerator was not 'random', but rather selected on the basis of house values and characteristics.
@@ -199,12 +197,18 @@ land_dif_1978 <- abs(round(land_1978$coefficients[2], 2))
 \noindent Plots of the estimated difference and 95% confidence interval for age and number of rooms, living area, and lot size for houses near and far from the incinerator
 
 ```{r}
-plot_summs(age_1978, rooms_1978, area_1978, land_1978, scale = TRUE, ci_level = 0.95, robust = list("HC2", "HC2", "HC2", "HC2"), model.names = c("age_1978", "rooms_1978", "area_1978", "land_1978"))
+plot_summs(age_1978, rooms_1978, area_1978, land_1978, 
+           scale = TRUE, ci_level = 0.95, 
+           robust = list("HC2", "HC2", "HC2", "HC2"), 
+           model.names = c("age_1978", "rooms_1978", "area_1978", "land_1978"))
 ```
 
 ```{r}
 # separated out age, rooms, and area so they could be seen on a smaller scale
-plot_summs(age_1978, rooms_1978, area_1978, scale = TRUE, robust = list("HC2", "HC2", "HC2"), model.names = c("age_1978", "rooms_1978", "area_1978"))
+plot_summs(age_1978, rooms_1978, area_1978, 
+           scale = TRUE, i_level = 0.95,
+           robust = list("HC2", "HC2", "HC2"), 
+           model.names = c("age_1978", "rooms_1978", "area_1978"))
 ```
 
 ### Answer b:
@@ -265,7 +269,7 @@ DD_hand
 
 ```{r}
 # compute the DD estimator using a linear model
-DD_model_d <- lm_robust(formula = rprice ~ nearinc * as.factor(year), data = data)
+DD_model_d <- lm_robust(formula = rprice ~ nearinc * as.factor(year) + nearinc + as.factor(year), data = data)
 ```
 
 ```{r}
@@ -279,26 +283,20 @@ huxreg("real house value" = DD_model_d)
 ```{r}
 DD_model_d_coef <- round(DD_model_d$coefficients[4], 0)
 DD_model_d_coef
-DD_model_d_se <- round(as.numeric(coef(summary(DD_model_d))[, "Std. Error"][4]), 0)
-DD_model_d_se
-```
-
-```{r}
-
 ```
 
 ### Answer d:
 \noindent Based on the difference-in-difference (DD) estimator, the causal effect of the incinerator on housing values without controlling for house and lot characteristics is $`r DD_model_d_coef`. The DD estimator represents how much more being near the incinerator effects the price in 1981 compared to 1978. The sign of the estimated DD coefficient is negative and that mean that houses for the treatment group (near the incinerator) have a lower price than houses away from the incinerator. The magnitude of this estimator is the difference between the two groups.  Based on the p-value, the DD coefficient is not statistically significant. Between 1978 and 1981, there is no statistical evidence that house values changed more for houses near the incinerator than they did for houses not near the incinerator.
 
-The difference-in-difference method estimates the average treatment effect as the difference between before and after averages of real house values for houses near the incinerator (treatment group) and not near the incinerator (control group). This method controls for the unobserved characteristics of treated and control groups and is useful for the North Andover incinerator problem because the treatment and control groups differ in time-invariant characteristics such as age, number of rooms, living area, and lot size. To adjust for pre-incinerator differences, the DD estimator subtracts the average house value during the pre-incinerator time period so that you can estimate how much of the difference is due to the treatment.
+\noindent The difference-in-difference method estimates the average treatment effect as the difference between before and after averages of real house values for houses near the incinerator (treatment group) and not near the incinerator (control group). This method controls for the unobserved characteristics of treated and control groups and is useful for the North Andover incinerator problem because the treatment and control groups differ in time-invariant characteristics such as age, number of rooms, living area, and lot size. To adjust for pre-incinerator differences, the DD estimator subtracts the average house value during the pre-incinerator time period so that you can estimate how much of the difference is due to the treatment.
 
 # Question e:
 ### Report the 95% confidence interval for the estimate of the causal effect on the incinerator in (d).
 
 ```{r}
-ci_95_low <- confint(DD_model_d)[4]
+ci_95_low <- round(confint(DD_model_d)[4], 0)
 ci_95_low
-ci_95_high <- confint(DD_model_d)[8]
+ci_95_high <- round(confint(DD_model_d)[8], 0)
 ci_95_high
 ```
 
@@ -309,7 +307,8 @@ ci_95_high
 ### How does your answer in (d) change when you control for house and lot characteristics? Test the hypothesis that the coefficients on the house and lot characteristics are all jointly equal to 0.
 
 ```{r}
-DD_model_f <- lm_robust(formula = rprice ~ nearinc * as.factor(year) + age + rooms + area + land, data = data)
+DD_model_f <- lm_robust(formula = rprice ~ nearinc * year + nearinc + year + age + rooms + area + land, 
+                        data = data)
 ```
 
 ```{r}
@@ -322,18 +321,19 @@ huxreg("real house value" = DD_model_f)
 
 ```{r}
 DD_model_f_coef <- round(DD_model_f$coefficients[8], 0)
+DD_model_f_coef <- as.numeric(DD_model_f_coef)
 DD_model_f_coef
 ```
 
-
 ```{r}
-linearHypothesis(DD_model_f, c("age = 0", "rooms = 0", "area = 0", "land = 0"), white.adjust = "hc2")
+linearHypothesis(DD_model_f, c("age = 0", "rooms = 0", "area = 0", "land = 0"), 
+                 white.adjust = "hc2")
 ```
 
 ### Answer f:
-\noindent Based on the difference-in-difference (DD) estimator, the causal effect of the incinerator on housing values when controlling for house and lot characteristics is $`r DD_model_f_coef`. The sign of the estimated DD coefficient when controlling for house/lot characteristics is negative (same as for part d) which mean that houses near the incinerator have a lower price than houses away from the incinerator. The magnitude of the estimated DD coefficient is larger when controlling for house/lot characteristics. This means that there is a greater difference between the value of houses near and away from the incinerator when controlling for house/lot characteristics. Based on the p-value, the DD coefficient is not statistically significant; between 1978 and 1981, house values may not have change more for houses near the incinerator than they did for houses not near the incinerator.
+\noindent Based on the difference-in-difference (DD) estimator, the causal effect of the incinerator on housing values when controlling for house and lot characteristics is $`r DD_model_f_coef`. The sign of the estimated DD coefficient when controlling for house/lot characteristics is negative (same as for part d) which means that houses near the incinerator have a lower price than houses away from the incinerator. The magnitude of the estimated DD coefficient is smaller when controlling for house/lot characteristics. This means that there is less of a difference between the value of houses near and away from the incinerator when controlling for house/lot characteristics. Based on the p-value, the DD coefficient is not statistically significant; between 1978 and 1981, house values may not have changed more for houses near the incinerator than they did for houses not near the incinerator.
 
-Since the p-value of the linear hypothesis test is statistically significant, we reject the null hypothesis that the coefficients on the house and lot characteristics are all jointly equal to 0. 
+\noindent Since the p-value of the linear hypothesis test is statistically significant, we reject the null hypothesis that the coefficients on the house and lot characteristics are all jointly equal to 0. 
 
 # Question g:
 ### Using the results from DD regression in (f), calculate by how much did real housing values change on average between 1978 and 1981 for the control group (not near the incinerator).
@@ -350,4 +350,4 @@ DD_model_f_coef_control
 ### Explain in words what is the key assumption underlying the causal interpretation of the DD estimator in the context of the incinerator construction in North Andover.
 
 ### Answer h:
-\noindent The key assumption underlying the causal interpretation of the DD estimator in the context of the incinerator construction in North Andover is the parallel trend assumption. The control group (house away from the incinerator) provides a valid counterfactual for the temporal evolution of the mean outcomes in the treatment group in absence of a change in treatment. A given house can't be near the incinerator one year and not near the incinerator another year.
+\noindent The key assumption underlying the causal interpretation of the DD estimator in the context of the incinerator construction in North Andover is the parallel trend assumption. The control group (houses away from the incinerator) provides a valid counterfactual for the temporal evolution of the mean outcomes in the treatment group in absence of a change in treatment. A given house can't be near the incinerator one year and not near the incinerator another year.
